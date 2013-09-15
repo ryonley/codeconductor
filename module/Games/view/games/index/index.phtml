@@ -1,0 +1,38 @@
+<?php
+// module/Album/view/album/album/index.phtml:
+
+$title = 'Games';
+$this->headTitle($title);
+?>
+    <h1><?php echo $this->escapeHtml($title); ?></h1>
+
+
+
+
+
+
+<?php
+
+if(isset($messages)) {
+    foreach($messages as $message) {
+        echo "<p>$message</p>";
+    }
+}
+
+
+if ($user = $this->identity()) {
+    echo 'Logged in as ' . $this->escapeHtml($user->getUsername());
+} else {
+    echo 'Not logged in';
+}
+
+foreach($games_available as $game):
+    /**
+     * NEED TO SEND THE AVAILABLE GAME ID AS A PARAMETER SO THAT THE PENDING GAMES PAGE KNOWS WHICH TYPE OF PENDING GAMES TO LOOK FOR
+     */
+    ?>
+<li><a href="<?= $this->url('games', array('action' => 'pending', 'id' => $game->getId())); ?>"><?= $game->getName(); ?></a></li>
+
+<?php
+endforeach;
+?>

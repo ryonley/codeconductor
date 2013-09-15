@@ -1,0 +1,65 @@
+<?php
+// module/Album/view/album/album/index.phtml:
+
+$title = 'Dashboard';
+$this->headTitle($title);
+?>
+    <h1><?php echo $this->escapeHtml($title); ?></h1>
+
+
+
+
+
+
+<?php
+
+if(isset($messages)) {
+    foreach($messages as $message) {
+        echo "<p>$message</p>";
+    }
+}
+
+
+if ($user = $this->identity()) {
+    echo 'Logged in as ' . $this->escapeHtml($user->getUsername());
+} else {
+    echo 'Not logged in';
+}
+
+//print_r($resources);
+/*
+$columns = 2;
+$i = 1;
+$resource_count = count($resources);
+$total = 0;
+
+echo "<table><tr>";
+foreach($resources as $name => $resource){
+    $total++;
+    // PRINT EACH RESOURCE
+    if($i == $columns){
+        echo "</tr>";
+        if($total != $resource_count){
+            echo "<tr>";
+        }
+    }
+
+
+    ?>
+   <td></td>
+    <?php
+
+    $i++;
+}
+echo "</table>";
+*/
+?>
+<ul>
+<?php
+foreach($resources as $resource):
+?>
+<li> <a href="<?php echo $this->url($resource['route']); ?>"> <?php echo $resource['pretty_name']; ?> </a></li>
+<?php
+endforeach;
+?>
+</ul>

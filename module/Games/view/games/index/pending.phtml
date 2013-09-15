@@ -1,0 +1,64 @@
+<?php
+// module/Album/view/album/album/index.phtml:
+
+$title = 'Games';
+$this->headTitle($title);
+?>
+<h1><?php echo $this->escapeHtml($title); ?></h1>
+
+
+<?php
+if(!empty($games_pending)):
+        foreach($games_pending as $game){
+
+            $time_started_object = $game->getTimeStarted();
+            $game_id = $game->getId();
+
+            $time =  $time_started_object->format('m-d-Y H:i:s');
+
+            // GET THE PLAYERS ATTACHED TO THIS GAME
+            $players = $game->getPlayers();
+            // WE ARE GOING TO COLLECT USER NAMES IN AN ARRAY
+            $usernames = array();
+            foreach($players as $player){
+                // GET THE USER OBJECT THAT EACH PLAYER IS ATTACHED TO
+                $user = $player->getUser();
+                // GET THE USER'S USERNAME
+                $username = $user->getUserName();
+                $usernames[] = $username;
+            }
+            // CREATE THE STRING THAT WILL BE DISPLAYED
+            $user_string = implode(", ", $usernames);
+            ?>
+                <div class='game_box'>
+                    <p>Created on: <?= $time; ?></p>
+                    <p>Players: <?= $user_string; ?></p>
+                    <a href="<?= $this->url('games', array('action' => 'join', 'id' => $game_id)); ?>">Join This Game</a>
+                </div>
+
+            <?php
+        }
+endif;
+
+
+
+/**
+ * IF THE LOGGED IN USER DOES NOT ALREADY HAVE A PENDING GAME, THEN SHOW THE START A GAME BOX
+ *  - First find the identity of this user
+ *  - Then check the db
+ */
+if ($user = $this->identity()) {
+    // CHECK IF THIS USER HAS ANY GAMES
+    if($user->hasPendingGame() == false){
+        // SHOW THE START A NEW GAME BOX
+        ?>
+        <div class='game_box'>
+            <a href="<?= $this->url('games', array('action' => 'start', 'id' => $game_type_id)); ?>">Start a New Game</a>
+        </div>
+        <?php
+    }
+}
+
+?>
+
+

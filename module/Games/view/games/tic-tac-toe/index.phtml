@@ -1,0 +1,75 @@
+<?php
+$this->HeadScript()->appendFile("/js/custom.js", "text/javascript");
+
+if($turn == true){
+    echo "<h2 id='turn'>Its your turn</h2>";
+    $cellclass = 'enabled';
+
+} else {
+    echo "<h2 id='turn'>Its not your turn</h2>";
+    $cellclass = 'disabled';
+    $form = "<form id='listen' style='display: none;'>
+    <input type='hidden' name='timestamp' id='timestamp' value='".$move_time."'/>
+    <input type='hidden' name='game_id' id='game_id' value='$game_id'/>
+    </form>
+    ";
+    echo $form;
+}
+?>
+
+
+
+<table id="gameboard">
+    <tr>
+        <td id="1" class="border-right border-bottom space <?= $cellclass; ?>">
+            <?php
+                // There will be an array where the position id is the key and the value is whether is should be an x or 0
+                if(array_key_exists('1', $taken)) echo $taken['1'];
+            ?>
+        </td>
+        <td id="2" class="border-right border-bottom space <?= $cellclass; ?>">
+            <?php
+            if(array_key_exists('2', $taken)) echo $taken['2'];
+            ?>
+        </td>
+        <td id="3" class="border-bottom space <?= $cellclass; ?>">
+            <?php
+            if(array_key_exists('3', $taken)) echo $taken['3'];
+            ?>
+        </td>
+    </tr>
+    <tr>
+        <td id="4" class="border-right border-bottom space <?= $cellclass; ?>">
+            <?php
+            if(array_key_exists('4', $taken)) echo $taken['4'];
+            ?>
+        </td>
+        <td id="5" class="border-right border-bottom space <?= $cellclass; ?>">
+            <?php
+            if(array_key_exists('5', $taken)) echo $taken['5'];
+            ?>
+        </td>
+        <td id="6" class="border-bottom space <?= $cellclass; ?>">
+            <?php
+            if(array_key_exists('6', $taken)) echo $taken['6'];
+            ?>
+        </td>
+    </tr>
+    <tr>
+        <td id="7" class="border-right space <?= $cellclass; ?>">
+            <?php
+            if(array_key_exists('7', $taken)) echo $taken['7'];
+            ?>
+        </td>
+        <td id="8" class="border-right space <?= $cellclass; ?>">
+            <?php
+            if(array_key_exists('8', $taken)) echo $taken['8'];
+            ?>
+        </td>
+        <td id="9" class="space <?= $cellclass; ?>">
+            <?php
+            if(array_key_exists('9', $taken)) echo $taken['9'];
+            ?>
+        </td>
+    </tr>
+</table>
