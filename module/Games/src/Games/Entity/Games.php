@@ -78,6 +78,18 @@ class Games
         return false;
     }
 
+    /**
+     * @param $win_strategy
+     * WILL RETURN EITHER A PLAYER OBJECT (THE WINNER)
+     * OR FALSE IF THERE IS NO WINNER YET
+     */
+    public function checkForWinner($win_strategy){
+        // THE WIN STRATEGY WILL TAKE THE MOVES COLLECTION AS A PARAMETER
+        $winner =  $win_strategy->setMoves($this->moves)->getWinner();
+        return $winner;
+
+    }
+
 
     /**
      * @param mixed $game_type

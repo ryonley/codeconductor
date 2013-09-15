@@ -3,6 +3,7 @@
 namespace Games\Controller;
 
 use Games\Entity\Moves;
+use Games\Helpers\ttcWinStrategy;
 use Zend\Mvc\Controller\AbstractActionController;
 use Zend\View\Model\ViewModel;
 use Zend\Config\Config as Config;
@@ -149,30 +150,46 @@ class TicTacToeController extends AbstractActionController
             } else {
                 // THIS POSITION IS AVAILABLE... CREATE THE RECORD
                 $datetime = new \DateTime("now");
+                $move_time = $datetime->format('Y-m-d H:i:s');
+
                 $move = new Moves();
                 $em->persist($move);
                 $move->setGame($game)->setPlayer($player)->setPosition($position)->setTimestamp($datetime);
 
+                /**
+                 * HERE IS WHERE WE CHECK EVERYTIME TO SEE IF THERE IS A WINNER YET
+                 * CREATE A METHOD IN THE GAMES ENTITY CALLED checkForWinner
+                 *
+                 * CREATE A WIN STRATEGY OBJECT THAT THE GAMES ENTITY WILL USE IN THE CHECKFORWINNER METHOD
+                 *
+                 */
+                $win_strategy = new ttcWinStrategy();
+                if($winner = $game->checkForWinner($win_strategy)){
+                    // IF THERE IS A WINNER THEN THERE IS NO NEED TO SET THE TURN
+                    $success = true;
+                } else {
+                    $turn_strategy = new ttcTurnStrategy($player, $em);
+                    $turn_strategy->setStatus(0);
+                    // SET TURN WILL SET THIS SPECIFIC PLAYERS TURN TO FALSE AND SET THE TURN OF WHOEVER GOES NEXT
+                    // WHAT DOES THE PLAYER OBJECT NEED FROM THE STRATEGY OBJECT TO:
+                    // - SET THE CURRENT
+                    $player->setTurn($turn_strategy);
+                    $em->persist($player);
+                    // SET THE TURN TO TRUE FOR WHOEVER'S TURN IT IS... SET TURN METHOD NEEDS TO DO THIS
+                    $em->flush();
 
-                $turn_strategy = new ttcTurnStrategy($player, $em);
-                $turn_strategy->setStatus(0);
-                // SET TURN WILL SET THIS SPECIFIC PLAYERS TURN TO FALSE AND SET THE TURN OF WHOEVER GOES NEXT
-                // WHAT DOES THE PLAYER OBJECT NEED FROM THE STRATEGY OBJECT TO:
-                // - SET THE CURRENT
-                $player->setTurn($turn_strategy);
-                $em->persist($player);
-                // SET THE TURN TO TRUE FOR WHOEVER'S TURN IT IS... SET TURN METHOD NEEDS TO DO THIS
-                $em->flush();
 
-                $move_time_object = $move->getTimestamp();
-                $move_time = $move_time_object->format('Y-m-d H:i:s');
-                $success = true;
+                    $success = true;
+                }
+
+
+
 
             }
 
             //   NEED TO ALSO RETURN THE POSITION CLICKED AND
             // NEED TO SET THE TURN
-             $response->setContent(\Zend\Json\Json::encode(array('success' => $success, 'mark' => $player->getMark(), 'timestamp' => $move_time, 'game_id' => $game_id)));
+             $response->setContent(\Zend\Json\Json::encode(array('success' => $success, 'mark' => $player->getMark(), 'timestamp' => $move_time, 'game_id' => $game_id, 'winner' => $winner)));
             return $response;
         }
 
