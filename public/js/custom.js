@@ -31,23 +31,37 @@ jQuery(function($) {
             dataType: 'json',
             data: {position: position_id},
             success: function(response){
+                console.log(response);
                 if(response.success == true){
                     // the chosen square is marked with this players mark
                     var mark = response.mark;
                     var time = response.timestamp;
                     var game_id = response.game_id;
-                    console.log(time);
+                    var winner = response.winner;
+                    var winning_positions = response.winning_positions;
+                    var game_over = response.game_over;
+                    var custom_text = response.custom_text;
 
                     td_element.text(mark);
-                    $('#turn').text('Its not your turn')
-
                     $('#gameboard td').each(function(){
                         $(this).removeClass('enabled').addClass('disabled');
                     });
 
-                    // the listener is engaged
-                    listen(time, game_id);
-                    //console.log(response);
+                    // DO THE FOLLOWING IF WINNER IS FALSE
+                    if(winner === false){
+                        if(game_over === true){
+                            $('#turn').text('Game over... No place else to go.');
+                        } else {
+                            $('#turn').text('Its not your turn');
+                            // the listener is engaged
+                            listen(time, game_id);
+                        }
+
+                    } else {
+                        $('#turn').text(custom_text);
+
+                    }
+
 
                 }
             }

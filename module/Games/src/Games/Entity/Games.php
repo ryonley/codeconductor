@@ -60,7 +60,10 @@ class Games
     }
 
     public function getNewerMove($timestamp){
-        $passed_time = strtotime($timestamp);
+        if(is_int($timestamp) === false){
+            $passed_time = strtotime($timestamp);
+        }
+
         // LOOP THROUGH THE MOVES AND IF THERE IS A NEWER MOVE, RETURN IT
         if(!empty($this->moves)){
             foreach($this->moves as $move){
@@ -87,7 +90,11 @@ class Games
         // THE WIN STRATEGY WILL TAKE THE MOVES COLLECTION AS A PARAMETER
         $winner =  $win_strategy->setMoves($this->moves)->getWinner();
         return $winner;
+    }
 
+    public function checkGameOver($game_over_strategy){
+       if($game_over_strategy->setMoves($this->moves)->isOver()) return true;
+        else return false;
     }
 
 

@@ -11,6 +11,7 @@ use RelyAuth\Entity\User as User;
 use Doctrine\Common\Collections\Criteria;
 use Zend\Session\Container as SessionContainer;
 use Games\Helpers\ttcTurnStrategy as ttcTurnStrategy;
+use Games\Helpers\ttcGameOver as ttcGameOver;
 
 class TicTacToeController extends AbstractActionController
 {
@@ -163,10 +164,24 @@ class TicTacToeController extends AbstractActionController
                  * CREATE A WIN STRATEGY OBJECT THAT THE GAMES ENTITY WILL USE IN THE CHECKFORWINNER METHOD
                  *
                  */
+                $success = true;
+                $game_over = false;
+                $winner_id = false;
+                $winning_positions = false;
+                $custom_text = '';
+
                 $win_strategy = new ttcWinStrategy();
-                if($winner = $game->checkForWinner($win_strategy)){
+                $game_over = new ttcGameOver($em);
+                $winner = $game->checkForWinner($win_strategy);
+                if($winner){
                     // IF THERE IS A WINNER THEN THERE IS NO NEED TO SET THE TURN
-                    $success = true;
+                    // SEND THE WINNER'S PLAYER ID
+                    $winner_id = $winner->getId();
+                    if($winner_id == $player_id) $custom_text = "You win!";
+                        else $custom_text = "You lose";
+                    $winning_positions = $win_strategy->getWinningPositions();
+                } elseif($game->checkGameOver($game_over)){
+                    $game_over = true;
                 } else {
                     $turn_strategy = new ttcTurnStrategy($player, $em);
                     $turn_strategy->setStatus(0);
@@ -178,8 +193,6 @@ class TicTacToeController extends AbstractActionController
                     // SET THE TURN TO TRUE FOR WHOEVER'S TURN IT IS... SET TURN METHOD NEEDS TO DO THIS
                     $em->flush();
 
-
-                    $success = true;
                 }
 
 
@@ -189,7 +202,8 @@ class TicTacToeController extends AbstractActionController
 
             //   NEED TO ALSO RETURN THE POSITION CLICKED AND
             // NEED TO SET THE TURN
-             $response->setContent(\Zend\Json\Json::encode(array('success' => $success, 'mark' => $player->getMark(), 'timestamp' => $move_time, 'game_id' => $game_id, 'winner' => $winner)));
+             $response->setContent(\Zend\Json\Json::encode(array('success' => $success, 'mark' => $player->getMark(), 'timestamp' => $move_time, 'game_id' => $game_id, 'winner_id' => $winner_id,
+                 'winning_positions' => $winning_positions, 'game_over' => $game_over, 'custom_text' => $custom_text, 'winner' => $winner)));
             return $response;
         }
 
@@ -210,9 +224,11 @@ class TicTacToeController extends AbstractActionController
       // CHECK THE MOVES TABLE FOR A RECORD WITH A TIMESTAMP GREATER THAN THAT PROVIDED AND A MATCHING GAME ID
       // IF IT EXISTS RETURN TRUE
 
-      // NEEDS TO RETURN WHETER OR NOT IT IS THE PLAYERS TURN
+      // NEEDS TO RETURN WHEThER OR NOT IT IS THE PLAYERS TURN
 
       // ALSO RETURN THE POSITION ID AND THE MARK OF THE PLAYER WHO MADE THE MOVE
+        $player_id = $this->getSessContainer()->player_id;
+
         $success = false;
         $position_id = '';
         $mark = '';
@@ -227,17 +243,40 @@ class TicTacToeController extends AbstractActionController
             $em = $this->getEntityManager();
             $game = $em->find('Games\Entity\Games', $game_id);
             $move = $game->getNewerMove($timestamp);
+
+            $winner_id = false;
+            $winning_positions = false;
+            $game_is_over = false;
+            $custom_text = '';
+
             if($move !== false){
                 // GET THE POSITION OF THE MOVE
                 // GET THE MARK OF THE PLAYER WHO MADE THE MOVE
                 $success = true;
+                $game_over = false;
                 $position_id = $move->getPosition()->getId();
                 $mark = $move->getPlayer()->getMark();
+
+                // ALSO DETERMINE IF THIS WAS A WINNING MOVE
+                $win_strategy = new ttcWinStrategy();
+                $game_over = new ttcGameOver($em);
+
+                if($winner = $game->checkForWinner($win_strategy)){
+                    // IF THERE IS A WINNER THEN THERE IS NO NEED TO SET THE TURN
+                    //$winner_id = $winner->getId();
+                    $winner_id = $winner;
+                    if($winner_id == $player_id) $custom_text = "You win!";
+                    else $custom_text = "You lose";
+                    $winning_positions = $win_strategy->getWinningPositions();
+                } elseif($game->checkGameOver($game_over)){
+                    $game_is_over = true;
+                }
             }
 
 
 
-            $response->setContent(\Zend\Json\Json::encode(array('position_id' => $position_id, 'mark' => $mark, 'success' => $success)));
+            $response->setContent(\Zend\Json\Json::encode(array('position_id' => $position_id, 'mark' => $mark, 'success' => $success, 'winner_id' => $winner_id,
+                'winning_positions' => $winning_positions, 'game_over' => $game_is_over, 'custom_text' => $custom_text)));
             return $response;
         }
 
