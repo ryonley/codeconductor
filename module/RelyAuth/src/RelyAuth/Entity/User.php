@@ -80,8 +80,8 @@ class User implements InputFilterAwareInterface
     public function hasPendingGame(){
        foreach($this->players as $player){
            if($player->hasPendingGame()) return true;
-            else return false;
        }
+       return false;
     }
 
     public function setRole($role)

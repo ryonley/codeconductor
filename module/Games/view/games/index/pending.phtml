@@ -1,5 +1,6 @@
 <?php
 // module/Album/view/album/album/index.phtml:
+$this->HeadScript()->appendFile("/js/pending.js", "text/javascript");
 
 $title = 'Games';
 $this->headTitle($title);
@@ -8,6 +9,7 @@ $this->headTitle($title);
 
 
 <?php
+//$user_is_waiting = false;
 if(!empty($games_pending)):
         foreach($games_pending as $game){
 
@@ -20,9 +22,20 @@ if(!empty($games_pending)):
             $players = $game->getPlayers();
             // WE ARE GOING TO COLLECT USER NAMES IN AN ARRAY
             $usernames = array();
+            $logged_users_game = false;
             foreach($players as $player){
                 // GET THE USER OBJECT THAT EACH PLAYER IS ATTACHED TO
                 $user = $player->getUser();
+                // IF THE LOGGED IN USER MATCHES USER, THEN SET A FLAG
+                if($user->getId() == $logged_user->getId()){
+                    $logged_users_game = true;
+                    //$user_is_waiting = true;
+                    $this_player_id = $player->getId();
+                    $game_id_to_check = $game_id;
+                    $this->headScript()->captureStart();?>
+                    waitForChallenger(<?= $game_id_to_check; ?>);
+                    <?php $this->headScript()->captureEnd();
+                }
                 // GET THE USER'S USERNAME
                 $username = $user->getUserName();
                 $usernames[] = $username;
@@ -33,7 +46,22 @@ if(!empty($games_pending)):
                 <div class='game_box'>
                     <p>Created on: <?= $time; ?></p>
                     <p>Players: <?= $user_string; ?></p>
-                    <a href="<?= $this->url('games', array('action' => 'join', 'id' => $game_id)); ?>">Join This Game</a>
+                    <?php
+                    // If this user is a player in this game, then say "Awaiting Challenger"
+                    // - First get the logged in user's id
+                    if($logged_users_game === true):
+
+                        $url = "/$game_type_path/index/$game_id/$this_player_id";
+                    ?>
+                        <p id='game_wait'>Awaiting a Challenger</p>
+                         <a id='game_key' href="<?= $url; ?>" style="display:none;">Challenger is Waiting</a>
+
+
+                    <?php else: ?>
+
+                         <a href="<?= $this->url('games', array('action' => 'join', 'id' => $game_id)); ?>">Join This Game</a>
+
+                    <?php endif; ?>
                 </div>
 
             <?php
@@ -59,6 +87,7 @@ if ($user = $this->identity()) {
     }
 }
 
-?>
+
+
 
 

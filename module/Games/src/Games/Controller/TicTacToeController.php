@@ -156,7 +156,7 @@ class TicTacToeController extends AbstractActionController
                 $move = new Moves();
                 $em->persist($move);
                 $move->setGame($game)->setPlayer($player)->setPosition($position)->setTimestamp($datetime);
-
+                $em->flush();
                 /**
                  * HERE IS WHERE WE CHECK EVERYTIME TO SEE IF THERE IS A WINNER YET
                  * CREATE A METHOD IN THE GAMES ENTITY CALLED checkForWinner
@@ -165,7 +165,7 @@ class TicTacToeController extends AbstractActionController
                  *
                  */
                 $success = true;
-                $game_over = false;
+                $game_is_over = false;
                 $winner_id = false;
                 $winning_positions = false;
                 $custom_text = '';
@@ -174,14 +174,16 @@ class TicTacToeController extends AbstractActionController
                 $game_over = new ttcGameOver($em);
                 $winner = $game->checkForWinner($win_strategy);
                 if($winner){
+                    $game_is_over = true;
                     // IF THERE IS A WINNER THEN THERE IS NO NEED TO SET THE TURN
                     // SEND THE WINNER'S PLAYER ID
-                    $winner_id = $winner->getId();
+                    $winner_id = $winner;
                     if($winner_id == $player_id) $custom_text = "You win!";
                         else $custom_text = "You lose";
                     $winning_positions = $win_strategy->getWinningPositions();
                 } elseif($game->checkGameOver($game_over)){
-                    $game_over = true;
+                    $game_is_over = true;
+                    $custom_text = "Game Over";
                 } else {
                     $turn_strategy = new ttcTurnStrategy($player, $em);
                     $turn_strategy->setStatus(0);
@@ -203,7 +205,7 @@ class TicTacToeController extends AbstractActionController
             //   NEED TO ALSO RETURN THE POSITION CLICKED AND
             // NEED TO SET THE TURN
              $response->setContent(\Zend\Json\Json::encode(array('success' => $success, 'mark' => $player->getMark(), 'timestamp' => $move_time, 'game_id' => $game_id, 'winner_id' => $winner_id,
-                 'winning_positions' => $winning_positions, 'game_over' => $game_over, 'custom_text' => $custom_text, 'winner' => $winner)));
+                 'winning_positions' => $winning_positions, 'game_over' => $game_is_over, 'custom_text' => $custom_text, 'winner' => $winner)));
             return $response;
         }
 
@@ -264,6 +266,7 @@ class TicTacToeController extends AbstractActionController
                 if($winner = $game->checkForWinner($win_strategy)){
                     // IF THERE IS A WINNER THEN THERE IS NO NEED TO SET THE TURN
                     //$winner_id = $winner->getId();
+                    $game_is_over = true;
                     $winner_id = $winner;
                     if($winner_id == $player_id) $custom_text = "You win!";
                     else $custom_text = "You lose";

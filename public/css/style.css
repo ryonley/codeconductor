@@ -68,3 +68,8 @@ div.container a.brand {
 #gameboard td.enabled:hover {
     background-color: #d0d0d0;
 }
+
+.highlight{
+    background-color: yellow;
+
+}

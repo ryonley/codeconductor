@@ -37,29 +37,28 @@ jQuery(function($) {
                     var mark = response.mark;
                     var time = response.timestamp;
                     var game_id = response.game_id;
-                    var winner = response.winner;
-                    var winning_positions = response.winning_positions;
-                    var game_over = response.game_over;
-                    var custom_text = response.custom_text;
 
                     td_element.text(mark);
                     $('#gameboard td').each(function(){
                         $(this).removeClass('enabled').addClass('disabled');
                     });
 
-                    // DO THE FOLLOWING IF WINNER IS FALSE
-                    if(winner === false){
-                        if(game_over === true){
-                            $('#turn').text('Game over... No place else to go.');
+
+
+                    if(response.game_over === true){
+                        if(response.winner_id !== false){
+                            $('#turn').text(response.custom_text);
+                            // Highlight the winning cells
+                            for (var i= 0; i < response.winning_positions.length; i++){
+                                var id = response.winning_positions[i];
+                                $('td#'+id).addClass('highlight');
+                            }
                         } else {
-                            $('#turn').text('Its not your turn');
-                            // the listener is engaged
-                            listen(time, game_id);
+                            $('#turn').text('Game Over');
                         }
-
                     } else {
-                        $('#turn').text(custom_text);
-
+                        listen(time, game_id)
+                        $('#turn').text('Its not your turn');
                     }
 
 
@@ -89,11 +88,27 @@ jQuery(function($) {
                         var position_id = response.position_id;
 
                         $('#'+position_id).text(mark);
-                        $('#turn').text('Its your turn');
 
-                        $('#gameboard td').each(function(){
-                            $(this).removeClass('disabled').addClass('enabled');
-                        });
+                        if(response.game_over == true){
+                            // If there is a winner
+                            if(response.winner_id != false){
+                                $('#turn').text(response.custom_text);
+                                // Highlight the winning cells
+                                for (var i= 0; i < response.winning_positions.length; i++){
+                                    var id = response.winning_positions[i];
+                                    $('td#'+id).addClass('highlight');
+                                }
+                            } else {
+                                $('#turn').text('Game Over');
+                            }
+                        } else {
+                            //IF THERE IS NO WINNER OR THE GAME IS NOT YET OVER, DO THE FOLLOWING
+                            $('#turn').text('Its your turn');
+                            $('#gameboard td').each(function(){
+                                $(this).removeClass('disabled').addClass('enabled');
+                            });
+                        }
+
 
                         // ONCE THE NEW DATA HAS BEEN OBTAINED, END setInterval
                         clearInterval(myInterval);
@@ -106,6 +121,10 @@ jQuery(function($) {
             // REPEATS EVERY 5 SECONDS UNTIL clearInterval IS CALLED
         },5000);
     }
+
+
+
+
 
 
 });

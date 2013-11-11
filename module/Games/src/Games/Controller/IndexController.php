@@ -63,6 +63,17 @@ class IndexController extends AbstractActionController
         $em = $this->getEntityManager();
         $games_pending = $em->getRepository('Games\Entity\Games')->findBy(array('game_type' => $game_type_id, 'status' => 'pending'));
 
+        // GET THE GAME TYPE FROM THE FIRST GAME // THEY WILL ALL BE OF THIS TYPE
+        //$first_game = $games_pending[0];
+        //$game_type = $first_game->getGameType();
+        $game_type = $em->find('Games\Entity\Available', $game_type_id);
+        $game_type_name = $game_type->getName();
+        $game_type_path = strtolower(str_replace(" ", "-", $game_type_name));
+
+
+
+        $logged_user = $this->identity();
+
         /**
          * DATA NEEDED BY THE VIEW INCLUDES
          *  - THE USERNAME OF THE PLAYER ATTACHED TO THE GAME
@@ -72,7 +83,9 @@ class IndexController extends AbstractActionController
 
         return array(
             'games_pending' => $games_pending,
-            'game_type_id' => $game_type_id
+            'game_type_id' => $game_type_id,
+            'game_type_path' => $game_type_path,
+            'logged_user' => $logged_user
         );
 
 
@@ -113,7 +126,7 @@ class IndexController extends AbstractActionController
             $turn_strategy = new ttcTurnStrategy();
             $turn_strategy->setStatus(1);
             $player->setTimeJoined($datetime)->setTurn($turn_strategy)->setOutcome('1')->setMark('x');
-           $em->persist($player);
+            $em->persist($player);
 
             $user->getPlayers()->add($player);
             $player->setUser($user);
@@ -233,6 +246,37 @@ class IndexController extends AbstractActionController
 
     }
 
+
+    public function readyAction(){
+        $request = $this->getRequest();
+        if($request->isPost()){
+            $post_data = $request->getPost();
+            $game_id = $post_data['game_id'];
+            // MAY NEED TO FIRST FIND THE GAME ID THAT IS ACTIVE FOR THIS USER
+            $testing =  "The game id is $game_id";
+
+            // HERE WE WILL CHECK A PARTICULAR GAME ID  FOR ITS STATUS
+            // GET THE GAME OBJECT USING THE GAME ID
+            $em = $this->getEntityManager();
+            $game = $em->find('Games\Entity\Games', $game_id);
+            $status = $game->getStatus();
+
+            // IF STATUS IS ACTIVE RETURN TRUE
+            if($status == 'active'){
+                $ready = true;
+            } else {
+                $ready = false;
+            }
+
+            // CHECK THE GAME OBJECT'S STATUS
+
+
+            // IF THE STATUS IS ACTIVE RETURN TRUE
+            $response = $this->getResponse();
+            $response->setContent(\Zend\Json\Json::encode(array('ready' => $ready)));
+            return $response;
+        }
+    }
 
 
 
