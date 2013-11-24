@@ -47,6 +47,7 @@ return array(
                         'action'        => 'login',
                     ),
                 ),
+
                 'may_terminate' => true,
                 'child_routes' => array(
                     'process' => array(
@@ -63,6 +64,7 @@ return array(
                     ),
                 ),
             ),
+
             'logout' => array(
                  'type' => 'Literal',
                 'options' => array(
@@ -72,6 +74,29 @@ return array(
                         'controller'    => 'Auth',
                         'action'        => 'logout',
                     )
+                )
+            ),
+            'register' => array(
+                'type'    => 'Literal',
+                'options' => array(
+                    'route'    => '/register',
+                    'defaults' => array(
+                        '__NAMESPACE__' => 'RelyAuth\Controller',
+                        'controller'    => 'Auth',
+                        'action'        => 'register',
+                    ),
+                ),
+            ),
+
+            'confirm' => array(
+                'type'    => 'segment',
+                'options' => array(
+                    'route'       => '/confirm[/:token]',
+                    'defaults' => array(
+                        '__NAMESPACE__' => 'RelyAuth\Controller',
+                        'controller'    => 'Auth',
+                        'action'        => 'confirm',
+                    ),
                 )
             ),
              

@@ -9,6 +9,9 @@ use Zend\InputFilter\InputFilter;
 use Zend\InputFilter\InputFilterAwareInterface;
 use Zend\InputFilter\InputFilterInterface;
 use Zend\Crypt\Password\Bcrypt;
+
+use Zend\InputFilter\Input;
+use Zend\Validator;
 use Games\Entity\Players;
 
 /**
@@ -52,6 +55,33 @@ class User implements InputFilterAwareInterface
      */
     protected $role;
 
+    /**
+     * @ORM\Column(type="datetime")
+     *
+     */
+    protected $registered;
+
+    /**
+     *  @ORM\Column(type="string")
+     *
+     */
+    protected $status;
+
+
+    /**
+     * @ORM\Column(type="datetime")
+     *
+     */
+    protected $last_login;
+
+    /**
+     * @ORM\Column(type="string")
+     *
+     */
+    protected $token;
+
+
+
 
 
 
@@ -64,6 +94,7 @@ class User implements InputFilterAwareInterface
 
 
     protected $inputFilter;
+    protected $registrationFilter;
 
 
 
@@ -72,8 +103,9 @@ class User implements InputFilterAwareInterface
 
 
 
-    public function __construct(){
+    public function __construct($sm = ''){
         $this->players = new ArrayCollection();
+        $this->sm = $sm;
     }
 
 
@@ -128,6 +160,10 @@ class User implements InputFilterAwareInterface
         return $this->password;
     }
 
+    public function getToken(){
+        return $this->token;
+    }
+
     public function setPassword($password){
         $bcrypt = new Bcrypt(array(
             'salt' => self::SALT,
@@ -160,6 +196,54 @@ class User implements InputFilterAwareInterface
         return $this;
     }
 
+
+    /**
+     * @param mixed $registered
+     */
+    public function setRegistered($registered)
+    {
+        $this->registered = $registered;
+        return $this;
+    }
+
+    /**
+     * @param mixed $status
+     */
+    public function setStatus($status)
+    {
+        $this->status = $status;
+        return $this;
+    }
+
+
+    /**
+     * @param mixed $token
+     */
+    public function setToken($token)
+    {
+        $this->token = $token;
+        return $this;
+    }
+
+    /**
+     * @param mixed $last_login
+     */
+    public function setLastLogin($last_login)
+    {
+        $this->last_login = $last_login;
+        return $this;
+    }
+
+    /**
+     * @param mixed $token_validity
+     */
+    public function setTokenValidity($token_validity)
+    {
+        $this->token_validity = $token_validity;
+        return $this;
+    }
+
+
     public function populate($data = array()){
         $this->id = (isset($data['id'])) ? $data['id'] : null;
         $this->username = (isset($data['username'])) ? $data['username'] : null;
@@ -178,7 +262,7 @@ class User implements InputFilterAwareInterface
          if(!$this->inputFilter){
             $inputFilter = new InputFilter();
             $factory = new InputFactory();
-            
+
             $inputFilter->add($factory->createInput(array(
                 'name' => 'email',
                 'required' => true,
@@ -206,4 +290,74 @@ class User implements InputFilterAwareInterface
          }
          return $this->inputFilter;
     }
+
+    public function getRegistrationFilter(){
+        if(!$this->registrationFilter){
+            $registrationFilter = new InputFilter();
+            $factory = new InputFactory();
+
+            $email = new Input('email');
+            $record_check_data = array('table' => 'user', 'field' => 'username', 'adapter' => $this->sm->get('dbAdapter') );
+            $emailValidatorChain = new \Zend\Validator\ValidatorChain();
+            $emailValidatorChain->attach(new Validator\EmailAddress())
+                                ->attach(new \Zend\Validator\Db\NoRecordExists($record_check_data));
+            $emailFilterChain = new \Zend\Filter\FilterChain();
+            $emailFilterChain->attachByName('stringtrim');
+
+            $email->setValidatorChain($emailValidatorChain)
+                  ->setFilterChain($emailFilterChain);
+            $registrationFilter->add($email);
+
+
+
+            $registrationFilter->add($factory->createInput(array(
+                'name' =>'password',
+                'required' => true,
+                'filters' => array(
+                    array('name' => 'StringTrim')
+                ),
+            )));
+
+            $registrationFilter->add($factory->createInput(array(
+                 'name' => 'passwordCheck',
+                 'required' => true,
+                 'filters' => array(
+                     array('name' => 'StringTrim')
+                 ),
+                 'validators' => array(
+                     array(
+                         'name' => 'Identical',
+                         'options' => array(
+                             'token' => 'password'
+                         )
+                     )
+                 )
+            )));
+
+            $registrationFilter->add($factory->createInput(array(
+                'name' => 'name',
+                'required' => true,
+                'filters' => array(
+                    array('name' => 'StringTrim'),
+                    array('name' => 'StripTags')
+                ),
+                'validators' => array(
+                    array(
+                        'name' => 'StringLength',
+                        'options' => array(
+                            'max' => 50
+                        )
+                    )
+                )
+            )));
+
+            $this->registrationFilter = $registrationFilter;
+
+
+
+        }
+
+        return $this->registrationFilter;
+    }
+
 }
