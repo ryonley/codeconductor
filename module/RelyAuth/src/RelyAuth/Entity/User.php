@@ -68,6 +68,8 @@ class User implements InputFilterAwareInterface
     protected $status;
 
 
+
+
     /**
      * @ORM\Column(type="datetime")
      *
@@ -162,6 +164,14 @@ class User implements InputFilterAwareInterface
 
     public function getToken(){
         return $this->token;
+    }
+
+    /**
+     * @return mixed
+     */
+    public function getStatus()
+    {
+        return $this->status;
     }
 
     public function setPassword($password){
@@ -359,5 +369,7 @@ class User implements InputFilterAwareInterface
 
         return $this->registrationFilter;
     }
+
+
 
 }

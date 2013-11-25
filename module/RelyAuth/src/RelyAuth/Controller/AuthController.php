@@ -10,6 +10,9 @@ use Zend\Session\Container as SessionContainer;
 use Zend\Config\Config as Config;
 use Doctrine\ORM\EntityManager;
 use RelyAuth\Entity\User;
+use Zend\Mail;
+use Zend\Mime\Message as MimeMessage;
+use Zend\Mime\Part as MimePart;
 
 
 class AuthController extends AbstractActionController
@@ -48,8 +51,10 @@ class AuthController extends AbstractActionController
     public function loginAction()
     {
         $sm = $this->getServiceLocator();
+        $em = $this->getEntityManager();
         $config = new Config($sm->get('Config'));
         $success_route = $config->login_success->route_name;
+        $messages = array();
         
         //if already login, redirect to success page
         if ($this->getAuthService()->hasIdentity()){
@@ -57,38 +62,44 @@ class AuthController extends AbstractActionController
         }
                  
         $form       = new LoginForm();
-         
-        
+
+
         $request = $this->getRequest();
         if ($request->isPost()){
-            $user = new User();
+            $post = $request->getPost();
+            $users = $em->getRepository('RelyAuth\Entity\User')->findBy(array('username' => $post['email']));
+            $user = $users[0];
             $form->setInputFilter($user->getInputFilter());
-            $form->setData($request->getPost());
+
+            $form->setData($post);
             if ($form->isValid()){
+                    // ONLY Authenticate if the user is valid
+                    if('active' == $user->getStatus()){
+                                $authService = $sm->get('Zend\Authentication\AuthenticationService');
+                                $adapter = $authService->getAdapter();
+                                $adapter->setIdentityValue($request->getPost('email'));
+                                $adapter->setCredentialValue($request->getPost('password'));
+                                $authResult = $authService->authenticate();
 
-                $authService = $sm->get('Zend\Authentication\AuthenticationService');
 
-                $adapter = $authService->getAdapter();
-                $adapter->setIdentityValue($request->getPost('email'));
-                $adapter->setCredentialValue($request->getPost('password'));
-                $authResult = $authService->authenticate();
+                                foreach($authResult->getMessages() as $message)
+                                {
 
-                
-                foreach($authResult->getMessages() as $message)
-                {
-                    $this->flashmessenger()->addMessage($message);
-                } 
-                       
-                if($authResult->isValid()){
-                           // $identity = $authResult->getIdentity();
-                             return $this->redirect()->toRoute($success_route);
-                }
+                                    $messages[] = $message;
+                                }
+
+                                if($authResult->isValid()){
+                                    return $this->redirect()->toRoute($success_route);
+                                }
+                    } else {
+                        $messages[] = 'Your account has not been activated';
+                    }
             }
         }
         
         return array(
             'form'      => $form,
-            'messages'  => $this->flashmessenger()->getMessages()
+            'messages'  => $messages
         );
     }
   
@@ -123,11 +134,11 @@ class AuthController extends AbstractActionController
         $sm = $this->getServiceLocator();
         $em = $this->getEntityManager();
         $config = new Config($sm->get('Config'));
-        $success_route = $config->login_success->route_name;
+        $messages = array();
 
         //if already login, redirect to success page
         if ($this->getAuthService()->hasIdentity()){
-            return $this->redirect()->toRoute('success');
+            return $this->redirect()->toRoute('dashboard');
         }
 
         $form       = new RegistrationForm();
@@ -147,13 +158,12 @@ class AuthController extends AbstractActionController
                 $username = $request->getPost('email');
                 $password = $request->getPost('password');
 
-                //Create the token
-
                 //Set token validity time
 
                 //Create a role object
                 $role = $em->find('RelyAuth\Entity\Role', 1);
 
+                //Create new user
                 $user = new User();
                 $user->setUserName($username)
                      ->setPassword($password)
@@ -166,34 +176,69 @@ class AuthController extends AbstractActionController
                 $em->persist($user);
                 $em->flush();
 
-                // Create the link
+                // Create the activation link
                 $url = $this->url()->fromRoute('confirm', array('token' => $user->getToken()));
+                $full_url = "http://".$_SERVER['SERVER_NAME'].$url;
 
-                echo $url;
+                // Prepare the activation email
+                $htmlBody = "<h2>Please click the link below to complete your registration.</h2>
+                             <p><a href='".$full_url."'>Complete Registration</a></p>";
+
+                $subject = "Welcome to codeConductor.com";
 
                 // Send the email
+                $this->sendMail($htmlBody,  $subject,  $username);
 
                 // Set the message
+                $messages[] = "You should receive an activation email soon.";
             }
         }
 
         return array(
             'form'      => $form,
-            'messages'  => $this->flashmessenger()->getMessages()
+            'messages'  => $messages
         );
     }
 
     public function confirmAction(){
-        // This link will send the user to a page that doesn't require authorization
         // It will query for user by token and upon finding user,
         // it will change their status to active if it is pending and set the registration date
         // it will then provide a link to the login form
+        $em = $this->getEntityManager();
+        $token = $this->params()->fromRoute('token');
+
+        // Find the user who's token id matches
+        $users = $em->getRepository('RelyAuth\Entity\User')->findBy(array('token' => $token));
+        $user = $users[0];
+        $user->setStatus('active');
+        $em->persist($user);
+        $em->flush();
     }
 
     protected function generateToken($email){
         $token = sha1($email.time().rand(0, 1000000));
         return $token;
     }
+
+    protected function sendMail($htmlBody,  $subject, $to, $from='info@codeconductor.com')
+    {
+        $html = new MimePart($htmlBody);
+        $html->type = "text/html";
+
+        $body = new MimeMessage();
+        $body->setParts(array($html));
+
+        $mail = new Mail\Message();
+        $mail->setBody($body)
+            ->setFrom($from, 'codeConductor')
+            ->addTo($to)
+            ->setSubject($subject);
+
+        $transport = new Mail\Transport\Sendmail();
+        $transport->send($mail);
+    }
+
+
     
     
 }
