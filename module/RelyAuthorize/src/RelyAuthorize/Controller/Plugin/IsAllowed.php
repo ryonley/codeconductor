@@ -41,7 +41,8 @@ class IsAllowed extends AbstractPlugin
            'RelyAuth',
            'Dashboard',
            'DoctrineORMModule',
-           'Games'
+           'Games',
+           'Testing'
         );
 
         foreach($resources as $resource){

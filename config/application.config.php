@@ -10,7 +10,8 @@ return array(
         'BjyProfiler',
         'RelyAuth',
         'RelyAuthorize',
-        'Games'
+        'Games',
+        'Testing'
 
     ),
 
